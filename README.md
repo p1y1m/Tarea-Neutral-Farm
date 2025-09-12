@@ -66,7 +66,7 @@ neutral-farming-om/
 - Schema validation uses **Pydantic** to keep inputs clean and ranges realistic.
 - For production: swap SQLite → PostgreSQL by changing `DATABASE_URL` in `src/db.py`.
 
-## 🗣️ How to explain in interview (TL;DR)
+## 🗣️ Summary
 1. **Problem framing**: predict OM from cheap proxies (pH, EC, N, Moisture) to avoid costly lab work.
 2. **Baseline-first**: chose Linear Regression + scaling: transparent, fast, good bias-variance tradeoff on tiny data.
 3. **Validation**: train/validation split, reported MAE/RMSE/R²; stored metrics + model artifact.
