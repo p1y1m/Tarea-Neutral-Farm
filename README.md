@@ -1,3 +1,5 @@
+Done by Pedro Yanez
+
 **Neutral Farming – Soil organic matter (OM) predictor**
 
 End to end proof of concept. Train a simple ML model to predict organic matter (OM) from pH, EC, total nitrogen, moisture, and serve it via a fastapi backend with data ingestion to sqlite.
