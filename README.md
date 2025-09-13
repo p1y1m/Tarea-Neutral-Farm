@@ -1,63 +1,151 @@
-Done by Pedro Yanez
+**Done by:** Pedro Yáñez Meléndez
 
-**Neutral Farming – Soil organic matter (OM) predictor**
+**Project name:** Neutral Farming OM API
 
-End to end proof of concept. Train a simple ML model to predict organic matter (OM) from pH, EC, total nitrogen, moisture, and serve it via a fastapi backend with data ingestion to sqlite.
+**Goal:** predict soil organic matter using proxy variables and expose a simple API for ingestion and prediction
 
-**Model (Part 1)**
+---
 
-Choice: LinearRegression in a Pipeline(StandardScaler, LinearRegression).
-Why: tiny dataset, low variance, interpretable coeficients, fast training/serving, strong baseline.
-Metrics saved to model/artifacts/metrics.json after training. example from this run:
+**What is included:**  
+- **Model:** Linear Regression with standard scaling  
+- **Data:** `data/organic_matter_dataset.csv`  
+- **Artifacts:** `model/artifacts/model.joblib` and `model/artifacts/metrics.json`  
+- **API:** FastAPI with `/data_ingestion` and `/predict`  
+- **Database:** SQLite with automatic table creation on app start  
+- **Validation:** train and validation split with metrics (MAE, RMSE, R2)
 
-{
-"mae": 0.1333636764868144,
-"rmse": 0.14653228960860773,
-"r2": 0.9561801798001206,
-"n_train": 8,
-"n_val": 2
-}
+---
 
-Artifacts: trained model in model/artifacts/model.joblib
+**Folder structure:**  
+- **data:** sample dataset  
+- **model/artifacts:** trained model and metrics  
+- **src:** source code  
+  - **train_model.py:** trains and saves artifacts  
+  - **utils.py:** loads and caches the trained model  
+  - **db.py:** SQLAlchemy connection (SQLite by default)  
+  - **models.py:** ORM table definition  
+  - **schema.py:** request validation with Pydantic  
+  - **api.py:** FastAPI endpoints and app startup  
+- **requirements.txt:** dependencies
 
-**Train**
-python -m venv .venv && source .venv/bin/activate # windows: .venv\Scripts\activate
-pip install -r requirements.txt
-python src/train_model.py
-cat model/artifacts/metrics.json
+---
 
-**Backend (Part 2)**
+**Prerequisites:**  
+- **Python:** 3.10 or 3.11  
+- **Pip:** up to date  
+- **Optional:** virtualenv
 
-DB: sqlite (om.db) with sqlalchemy
-Endpoints:
-POST /data_ingestion: store new record {pH, EC, Total_Nitrogen, Moisture, Organic_Matter?}
-POST /predict: predict om from the 4 proxies
+---
 
-Run api
-uvicorn src.api:app --reload
+**Local setup:**  
+1. **Create env:**  
+   - Windows: `python -m venv .venv`  
+   - Mac or Linux: `python3 -m venv .venv`  
+2. **Activate env:**  
+   - Windows: `.venv\Scripts\activate`  
+   - Mac or Linux: `source .venv/bin/activate`  
+3. **Install:** `pip install -r requirements.txt`
 
-**Example requests**
-curl -X POST http://127.0.0.1:8000/data_ingestion
- -H "Content-Type: application/json" -d '{"pH": 6.8, "EC": 0.25, "Total_Nitrogen": 0.12, "Moisture": 28, "Organic_Matter": 3.8}'
+---
 
-curl -X POST http://127.0.0.1:8000/predict
- -H "Content-Type: application/json" -d '{"pH": 7.0, "EC": 0.3, "Total_Nitrogen": 0.15, "Moisture": 30}'
+**Train the model:**  
+- **Command:** `python src/train_model.py`  
+- **Output:**  
+  - `model/artifacts/model.joblib`  
+  - `model/artifacts/metrics.json` (mae, rmse, r2, n_train, n_val)
 
-**Project layout**
+---
 
-neutral-farming-om/
-data/organic_matter_dataset.csv
-model/artifacts/ - model.joblib + metrics.json
-src/
-api.py - fastapi app with /data_ingestion and /predict
-train_model.py - training script
-db.py, models.py - sqlite via sqlalchemy
-schema.py - pydantic request/response models
-utils.py - model loader
-requirements.txt
-readme.md
+**Database:**  
+- **Engine:** SQLite file `om.db`  
+- **Table creation:** automatic on API start with `create_all`  
+- **Migrations:** not used in this version  
+- **Switch to PostgreSQL:** edit `DATABASE_URL` in `src/db.py`
 
-**Notes**
+---
 
-schema validation uses pydantic to keep inputs clean and ranges realistic.
-for production swap sqlite to postgresql by changing DATABASE_URL in src/db.py
+**Start the API:**  
+- **Command:** `uvicorn src.api:app --reload`  
+- **Local URL:** `http://127.0.0.1:8000`  
+- **Docs:** `http://127.0.0.1:8000/docs`
+
+---
+
+**Test endpoints:**  
+- **Data ingestion:**  
+  ```
+  POST /data_ingestion
+  Content-Type: application/json
+
+  {
+    "pH": 6.9,
+    "EC": 0.28,
+    "Total_Nitrogen": 0.14,
+    "Moisture": 29,
+    "Organic_Matter": 4.1
+  }
+  ```
+  **Response:** `{"id": 1}`
+
+- **Prediction:**  
+  ```
+  POST /predict
+  Content-Type: application/json
+
+  {
+    "pH": 6.7,
+    "EC": 0.25,
+    "Total_Nitrogen": 0.12,
+    "Moisture": 28
+  }
+  ```
+  **Response:** `{"predicted_organic_matter": 3.8}`  
+  **Note:** field names match the training columns
+
+---
+
+**Run on Google Colab (optional):**  
+- **Notebook flow:** mount Drive if you want persistence, install `requirements.txt`, run `src/train_model.py`, start Uvicorn  
+- **Public testing:** Cloudflare Tunnel can expose the local URL for quick tests  
+- **Benefit:** clean environment with step by step documentation inside the notebook
+
+---
+
+**Design decisions:**  
+- **Simple model:** Linear Regression fits a tiny dataset, fast and interpretable  
+- **Single pipeline:** scaler and model saved together to avoid data leakage and to simplify serving  
+- **REST API:** clear JSON contract for easy integration  
+- **Light DB:** SQLite for demo and tests with an easy path to PostgreSQL  
+- **Assignment fit:** trained model, evaluation, stored artifact, ingestion endpoint, prediction endpoint, clear code layout, documentation, easy run
+
+---
+
+**How to read metrics:**  
+- **File:** `model/artifacts/metrics.json`  
+- **Goal:** low MAE and RMSE, high R2  
+- **Note:** validation size is small, cross validation is recommended when more data is available
+
+---
+
+**Environment variables (optional):**  
+- **DATABASE_URL:** switch database if needed  
+- **Artifacts path:** keep `model/artifacts` for simplicity
+
+---
+
+**Troubleshooting:**  
+- **Table not created:** start the API, creation is automatic  
+- **Prediction error:** check JSON field names and numeric types  
+- **No artifacts:** run `src/train_model.py` and check write permissions  
+- **Colab persistence:** save artifacts inside mounted Drive
+
+---
+
+**Future work:**  
+- **Cross validation and more data**  
+- **Confidence intervals for metrics**  
+- **Alembic for migrations**  
+- **Docker and Compose**  
+- **Auth and rate limiting**  
+- **Structured logging and tracing**
+
