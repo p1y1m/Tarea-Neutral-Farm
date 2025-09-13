@@ -16,7 +16,8 @@ drive.mount('/content/drive')
 # %cd "/content/drive/MyDrive/Pedro Yanez - neutral-farming-om"
 !ls -R
 
-# instalar las dependencias necesarias del proyecto desde requirements.txt
+# instalar las dependencias necesarias del proyecto desde requirements.txt Va a pedir reiniciar y luego de eso hay que volver a ejecutar el paso anterior
+# Es decir el paso de entrar a la carpeta de my drive
 !pip install -r requirements.txt
 
 # ejecutar el script de entrenamiento para crear el modelo y guardar métricas en model/artifacts
@@ -35,11 +36,11 @@ metrics
 
 
 
-# instalar cloudflared oficial
+# instalar cloudflared oficial. Luego detener con stop y ejecutar el siguiente comando, desde ahí acceder a la url para probar la api
 !wget -q https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb && dpkg -i cloudflared-linux-amd64.deb
 !uvicorn src.api:app --host 0.0.0.0 --port 8000 & cloudflared tunnel --url http://localhost:8000
 
-# exponer la API en un link público sin password
+# exponer la API en un link público sin password. Ir a una página del tipo https://deficit-thumbnail-refined-engine.trycloudflare.com/docs para probar la api
 !uvicorn src.api:app --host 0.0.0.0 --port 8000 & cloudflared tunnel --url http://localhost:8000
 
 #Ir a post predict try out y e indicar
@@ -52,7 +53,7 @@ metrics
   "Moisture": 28
 }
 
-# endpoint /predict para construir un DataFrame con los nombres EXACTOS de entrenamiento
+# endpoint /predict para construir un DataFrame con los nombres EXACTOS de entrenamiento. NO ES NECESARIO ESTE PASO
 from pathlib import Path
 
 api_code = """
@@ -120,28 +121,19 @@ print("api.py actualizado 🎯")
   "Organic_Matter": 4.1
 }
 
-# Commented out IPython magic to ensure Python compatibility.
-# Configurar identidad de GitHub
-!git config --global user.email "pedroeyanezmel531@gmail.com"
-!git config --global user.name "p1y1m"
+import sqlite3 # Detener la ejecución en segundo plano del servidor FastAPI con Cloudflare Tunnel, para poder ejecutar este comando
+# Con este comando aparecen las tablas que existen en SQLite
+# Conectar a la base
+conn = sqlite3.connect("om.db")
 
-# Entrar a la carpeta del proyecto en Google Drive
-# %cd /content/drive/MyDrive/neutral-farming-om
+# Listar todas las tablas
+tables = conn.execute("SELECT name FROM sqlite_master WHERE type='table';").fetchall()
+print("Tablas en la base:", tables)
 
-# Inicializar git en la carpeta del proyecto
-!git init
+import pandas as pd
 
-# Conectar el repositorio remoto de GitHub
-!git remote add origin https://github.com/p1y1m/Codes.git
+# Leer todas las filas de la tabla soil_records. Son los que fueron insertados a través de Ingestion.
+df = pd.read_sql_query("SELECT * FROM soil_records;", conn)
 
-# Agregar todos los archivos del proyecto al versionamiento
-!git add .
-
-# Hacer el primer commit con un mensaje descriptivo
-!git commit -m "Initial commit - Neutral Farming project"
-
-# Cambiar el nombre de la rama a main
-!git branch -M main
-
-# Subir el proyecto a GitHub en la rama main
-!git push -u origin main
+# Mostrar el dataframe
+df
